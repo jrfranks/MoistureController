@@ -43,42 +43,23 @@
 #include <LowPower.h>
 #include <analogComp.h>
 
+#define CLOCK_SECONDS_PER_TICK	8ULL
+#define DEBOUNCE_DELAY_TIME	((1ULL * 60ULL) / CLOCK_SECONDS_PER_TICK)
+
+// Debounce delay for turning water on in milliseconds.
 const int moistureSensorPin = 6;  // Pin AIN0 connected to moisture sensor
 const int potPin = 7;             // Pin AIN1 connected to POT (interrupt pin)
 const int valvePin = 13;          // Pin connected to valve
 
+volatile bool valveOpen = true;   // Set valve open to force close in setup()
+
+volatile unsigned long debounceTimer = 0;
+
 // Function prototypes
 void setup(void);                 // Arduino initialization function
 void loop(void);                  // Arduino main loop
-void moistureLowInterrupt(void);
-void moistureHighInterrupt(void);
-
-#ifdef DEBUG
-volatile bool valveOpen = false;
-#endif /* DEBUG */
-
-
-/**
- * @brief Closes the water valve.
- *
- * This function closes the water valve by setting the valvePin to LOW.
- *
- * This function is declared as static inline, which suggests to the compiler
- * to insert the function's code directly into the place where it is called,
- * instead of performing a regular function call.
- *
- * @note This function does not check if the valve is already closed. Calling
- * this function when the valve is already closed will have no effect.
- *
- * @return void
- */
-static inline void closeWaterValve(void)
-{
-  digitalWrite(valvePin, LOW); // Close valve.
-#ifdef DEBUG
-  valveOpen = false;
-#endif /* DEBUG */
-}
+void moistureLevelLowInterrupt(void);
+void moistureLevelHighInterrupt(void);
 
 
 /**
@@ -95,14 +76,64 @@ static inline void closeWaterValve(void)
  *
  * @return void
  */
-static inline void openWaterValve(void)
+void openWaterValve(void)
 {
-  digitalWrite(valvePin, HIGH); // Open valve.
-#ifdef DEBUG
-  valveOpen = true;
-#endif /* DEBUG */
+  if (!valveOpen) {
+    if (debounceTimer == 0) {
+      digitalWrite(valvePin, HIGH); // Open valve.
+      valveOpen = true;
+    }
+  }
 }
 
+
+/**
+ * @brief Closes the water valve.
+ *
+ * This function closes the water valve by setting the valvePin to LOW.
+ *
+ * This function is declared as static inline, which suggests to the compiler
+ * to insert the function's code directly into the place where it is called,
+ * instead of performing a regular function call.
+ *
+ * @note This function does not check if the valve is already closed. Calling
+ * this function when the valve is already closed will have no effect.
+ *
+ * @return void
+ */
+void closeWaterValve(void)
+{
+  if (valveOpen) {
+    digitalWrite(valvePin, LOW); // Close valve.
+    valveOpen = false;
+    debounceTimer = DEBOUNCE_DELAY_TIME;
+  }
+}
+
+
+/*
+ * Enable interrupts.
+ *
+ * The current state of the moisture level is unknown
+ * at the point.  Find out if the comparator thinks it
+ * is currently high or low and setup interrupt
+ * handlers accordingly.
+ *
+ * We let the valve control routines filter out
+ * redundant calls.
+ */
+void enableMoistureLevelInterrupts(void)
+{
+  if (analogComparator.waitComp(1)) {
+    // Water level is High
+    closeWaterValve();
+    analogComparator.enableInterrupt(moistureLevelLowInterrupt, FALLING);
+  } else {
+    // Water level is Low
+    openWaterValve();
+    analogComparator.enableInterrupt(moistureLevelHighInterrupt, RISING);
+  }
+}
 
 /**
  * Sets up the initial state of the Arduino board and its peripherals.
@@ -141,12 +172,15 @@ void setup(void)
 
   // Initialize valve
   pinMode(valvePin, OUTPUT);
-  digitalWrite(valvePin, LOW);     // Make sure valve is closed.
+  closeWaterValve();
 
   analogComparator.setOn(AIN0, AIN1);    // Use voltages on both pins to compare
-  analogComparator.enableInterrupt(moistureLowInterrupt, FALLING);
+  enableMoistureLevelInterrupts();
   
-  // System is in order so we can enable interrupts and start normal processing.
+  /*
+   * System is in order so we can enable interrupts
+   * and start normal processing.
+   */
   interrupts();
 }
 
@@ -170,26 +204,57 @@ void setup(void)
 
 void loop(void)
 {
-  // Put board into sleep mode
-  LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
 #ifdef DEBUG
-  if (valveOpen == true) {
-    Serial.println("Valve OPEN");
-  } else {
-    Serial.println("Valve CLOSED");
+  static previous = valveOpen;
+
+  if (previous != valveOpen) {
+    if ((previous = valveOpen) == true) {
+      Serial.println("Valve OPEN");
+    } else {
+      Serial.println("Valve CLOSED");
+    }
   }
 #endif /* DEBUG */
+
+  /*
+   * Unfortunatly 8 Seconds is the max we can
+   * use without losing interrupts or time
+   * without a real time clock.
+   *
+   * With this we can keep a crude elapsed time
+   * counter for debouncing.
+   */
+  LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
+  if (debounceTimer > 0) {
+    debounceTimer--;
+  }
 }
 
 
-void moistureLowInterrupt(void)
+/*
+ * Interrupt processing routines.
+ *
+ * Debounce the valve open/close cycles.
+ * Bias towards valve closed position so as not to waste water.
+ *
+ * We do this by forcing a delay after every valve close
+ * transition but not for a valve open transition.
+ *
+ * The delay is forced by disabling interrupts when closing
+ * and reenabling them in the main loop after a timeout period.
+ *
+ * Also note that the water valve is opened at the moment and
+ * closed at the first to conserve water.  Every millisecond
+ * counts when the water is flowing...
+ */
+void moistureLevelLowInterrupt(void)
 {
+  analogComparator.enableInterrupt(moistureLevelHighInterrupt, RISING);
   openWaterValve();
-  analogComparator.enableInterrupt(moistureHighInterrupt, FALLING);
 }
 
-void moistureHighInterrupt(void)
+void moistureLevelHighInterrupt(void)
 {
   closeWaterValve();
-  analogComparator.enableInterrupt(moistureLowInterrupt, RISING);
+  analogComparator.enableInterrupt(moistureLevelLowInterrupt, FALLING);
 }
