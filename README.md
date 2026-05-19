@@ -72,7 +72,7 @@ Even a perfectly sleeping MCU is useless if the rest of the system is wasting po
 
 ### How to Read the Reference Implementation
 
-The code in `firmware/avr-ultra/Power.h` and `MoistureController.ino` is deliberately written as a **teaching example** as well as a working foundation:
+The code in `firmware/avr-ultra/Power.h` and `avr-ultra.ino` is deliberately written as a **teaching example** as well as a working foundation:
 
 - `power_init_lowest_leakage()` contains the complete AVR recipe with comments pointing back to the exact sections of REASONING.md.
 - Layer 0 (forced safe valve state) is the very first thing that happens in `setup()`, before any Serial, any I2C, any sensor work.
@@ -96,13 +96,15 @@ The reference implementation lives here:
 
 ```
 firmware/avr-ultra/
-├── MoistureController.ino   # Thin entry point (setup/loop)
+├── avr-ultra.ino            # Thin entry point (setup/loop)
 ├── Config.h
 ├── Types.h
 ├── Power.h                  # The low-power recipe + rail control
 ```
 
 Open that folder in the Arduino IDE, select an ATmega328P board (Nano, Pro Mini, Uno), and compile. The sketch demonstrates correct Layer 0 behavior and the full lowest-leakage configuration on every reset.
+
+> **Note**: The main sketch file is named `avr-ultra.ino` (to match the folder name). This is required for smooth operation with `arduino-cli`. The Arduino IDE itself is more lenient with filenames.
 
 Legacy code from 2023 (the original WDT polling sketch and the comparator experiments) remains in git history for reference but is no longer the active target.
 

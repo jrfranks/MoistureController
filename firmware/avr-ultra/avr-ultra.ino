@@ -1,5 +1,5 @@
 /*
-  MoistureController.ino — Ultra low-power AVR firmware (Milestone 0 skeleton)
+  avr-ultra.ino — Ultra low-power AVR firmware (Milestone 0 skeleton)
 
   Purpose of this slice:
   - Prove the single most important robustness property (Layer 0) on every
@@ -117,6 +117,6 @@ void loop() {
 }
 
 // =============================================================================
-// End of MoistureController.ino (Milestone 0)
+// End of avr-ultra.ino (Milestone 0)
 // Every line above exists only to guarantee Layer 0 and minimal leakage.
 // =============================================================================

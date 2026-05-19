@@ -6,7 +6,7 @@
   auditable. All values carry explicit traceability to the governing constraints
   in REASONING.md.
 
-  Arduino IDE compatible: placed alongside MoistureController.ino in the sketch
+  Arduino IDE compatible: placed alongside avr-ultra.ino in the sketch folder
   folder. No .cpp files in Milestone 0 skeleton (see plan).
 
   License: MIT (see root LICENSE)
