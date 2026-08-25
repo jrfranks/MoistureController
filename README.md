@@ -100,14 +100,15 @@ firmware/avr-ultra/
 ├── avr-ultra.ino        # setup() / loop() only
 ├── Config.h             # pin map, thresholds, compile flags
 ├── Types.h              # states, faults, EEPROM structs
-├── Logic.h              # pure CRC / hysteresis / window math (host-tested)
+├── Logic.h              # CRC / hysteresis / window math
+├── Policy.h             # persist slot choice + six-layer cycle (host-tested)
 ├── Power.h              # sleep recipe, rail gates, Vbat ADC
 ├── Utils.h              # busy-wait, I2C on/off + bus recover
 ├── Valve.h              # latching open/close pulses
 ├── Sensor.h             # gated analog + optional STEMMA
 ├── RTC_DS3231.h         # VBAT-friendly alarm on INT
-├── Persist.h            # EEPROM + CRC-16 + backup slot + event log
-├── Safety.h             # six-layer cycle
+├── Persist.h            # EEPROM adapter
+├── Safety.h             # I/O around Policy.h
 └── StateMachine.h       # boot / wake / FAULT-clear
 ```
 
@@ -173,7 +174,7 @@ git clone https://github.com/jrfranks/MoistureController.git
 cd MoistureController
 
 make            # compile firmware/avr-ultra
-make test       # host unit tests (Logic.h: CRC, hysteresis, windows, persist CRC)
+make test       # host unit tests (Logic + persist slots + six-layer cycle)
 make legacy     # compile the 2023 root sketch
 make check      # ultra + legacy + test
 make help

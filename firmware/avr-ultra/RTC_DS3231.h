@@ -76,19 +76,7 @@ inline bool rtc_read_time(CivilTime *t) {
   }
   t->second = bcd_to_bin(r[0] & 0x7F);
   t->minute = bcd_to_bin(r[1] & 0x7F);
-  if (r[2] & 0x40) {
-    uint8_t h = bcd_to_bin(r[2] & 0x1F);
-    bool pm = (r[2] & 0x20) != 0;
-    if (h == 12) {
-      h = 0;
-    }
-    if (pm) {
-      h = (uint8_t)(h + 12);
-    }
-    t->hour = h;
-  } else {
-    t->hour = bcd_to_bin(r[2] & 0x3F);
-  }
+  t->hour = rtc_decode_hour(r[2]);
   t->day = bcd_to_bin(r[4] & 0x3F);
   t->month = bcd_to_bin(r[5] & 0x1F);
   t->year = (uint16_t)(2000 + bcd_to_bin(r[6]));

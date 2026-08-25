@@ -250,3 +250,18 @@ inline uint8_t bcd_to_bin(uint8_t bcd) {
 inline uint8_t bin_to_bcd(uint8_t bin) {
   return (uint8_t)(((bin / 10) << 4) | (bin % 10));
 }
+
+inline uint8_t rtc_decode_hour(uint8_t hour_reg) {
+  if (hour_reg & 0x40) {
+    uint8_t h = bcd_to_bin(hour_reg & 0x1F);
+    bool pm = (hour_reg & 0x20) != 0;
+    if (h == 12) {
+      h = 0;
+    }
+    if (pm) {
+      h = (uint8_t)(h + 12);
+    }
+    return h;
+  }
+  return bcd_to_bin(hour_reg & 0x3F);
+}
