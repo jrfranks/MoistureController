@@ -1,5 +1,5 @@
 #+
-#  Copyright (c) 2023-2025 John Franks
+#  Copyright (c) 2023-2026 John Franks
 #
 #  Permission is hereby granted, free of charge, to any person obtaining a
 #  copy of this software and associated documentation files (the "Software"),
@@ -19,174 +19,117 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 #
-#  MoistureController CMake build system (2025 rewrite)
+#  MoistureController CMake build
 #
-#  This file provides practical, working build support for the project.
+#  Primary firmware: firmware/avr-ultra/   (arduino-cli)
+#  Host tests:       tests/host/           (make test / ctest)
+#  Native avr-gcc:   cmake/native_smoke.cpp with cmake/avr-toolchain.cmake
 #
-#  Primary target:  firmware/avr-ultra/avr-ultra.ino   (modern Ultra low-power reference)
-#                     Note: The .ino file is deliberately named to match the folder
-#                     so that `arduino-cli` works cleanly.
-#  Secondary target: legacy root MoistureController.ino (for historical / CI compatibility)
+#    cmake -S . -B build -DUSE_ARDUINO_CLI=ON
+#    cmake --build build
+#    ctest --test-dir build --output-on-failure
 #
-#  Recommended usage:
-#
-#    # Using arduino-cli (easiest and most reliable for real hardware)
-#    cmake -B build -DUSE_ARDUINO_CLI=ON ..
-#    cmake --build build          # Builds both "ultra" (firmware/avr-ultra/avr-ultra.ino) and "legacy" by default
-#
-#    # Native avr-gcc build (for CI, headless, or advanced users)
-#    cmake -B build -DUSE_NATIVE_AVR=ON -DCMAKE_TOOLCHAIN_FILE=cmake/avr-toolchain.cmake ..
-#    cmake --build build          # Builds both "ultra" and "legacy" by default
-#
-#    # Explicit targets:
-#    cmake --build build --target ultra
-#    cmake --build build --target legacy
-#    cmake --build build --target build-all
-#
-#  The old 2023 ExternalProject / simavr / mock mess has been removed.
-#  It was non-functional and referenced libraries no longer used by the project.
+#    cmake -S . -B build-native -DUSE_NATIVE_AVR=ON \
+#          -DCMAKE_TOOLCHAIN_FILE=cmake/avr-toolchain.cmake
+#    cmake --build build-native
 #-
 
 cmake_minimum_required(VERSION 3.16)
 
 project(MoistureController LANGUAGES C CXX)
 
-# -------------------------------------------------------------------
-# Options
-# -------------------------------------------------------------------
-option(USE_ARDUINO_CLI  "Use arduino-cli to compile sketches (recommended)" ON)
-option(USE_NATIVE_AVR   "Build with native avr-gcc (requires toolchain file)" OFF)
+option(USE_ARDUINO_CLI "Use arduino-cli to compile sketches (recommended)" ON)
+option(USE_NATIVE_AVR  "Build Logic smoke test with avr-gcc toolchain file" OFF)
 
-# If user explicitly asks for native AVR, turn off arduino-cli
 if(USE_NATIVE_AVR)
     set(USE_ARDUINO_CLI OFF CACHE BOOL "" FORCE)
 endif()
 
 if(USE_ARDUINO_CLI AND USE_NATIVE_AVR)
-    message(FATAL_ERROR "Cannot enable both USE_ARDUINO_CLI and USE_NATIVE_AVR at the same time.")
+    message(FATAL_ERROR "Cannot enable both USE_ARDUINO_CLI and USE_NATIVE_AVR.")
 endif()
 
-# Common compile flags for our own code
-add_compile_options(-Wall -Wextra)
+enable_testing()
 
-# -------------------------------------------------------------------
-# Helper: Arduino .ino → .cpp conversion (for native builds)
-# -------------------------------------------------------------------
-function(arduino_ino_to_cpp ino_path out_cpp_var)
-    get_filename_component(ino_name "${ino_path}" NAME)
-    set(out_cpp "${CMAKE_CURRENT_BINARY_DIR}/${ino_name}.cpp")
-    file(READ "${ino_path}" ino_content)
-    file(WRITE "${out_cpp}"
-"#include <Arduino.h>
-#line 1 \"${ino_path}\"
-${ino_content}")
-    set(${out_cpp_var} "${out_cpp}" PARENT_SCOPE)
-endfunction()
+# Host tests use the native compiler. Skip when the AVR toolchain is loaded.
+if(NOT CMAKE_CROSSCOMPILING)
+    add_executable(host_tests tests/host/test_main.cpp)
+    target_include_directories(host_tests PRIVATE
+        "${CMAKE_SOURCE_DIR}/firmware/avr-ultra")
+    target_compile_definitions(host_tests PRIVATE HOST_TEST)
+    target_compile_features(host_tests PRIVATE cxx_std_11)
+    if(MSVC)
+        target_compile_options(host_tests PRIVATE /W4)
+    else()
+        target_compile_options(host_tests PRIVATE -Wall -Wextra -Werror)
+    endif()
+    add_test(NAME host_tests COMMAND host_tests)
+endif()
 
-# -------------------------------------------------------------------
-# arduino-cli based builds (preferred path)
-# -------------------------------------------------------------------
 if(USE_ARDUINO_CLI)
-
     find_program(ARDUINO_CLI arduino-cli REQUIRED
                  DOC "Path to arduino-cli executable")
 
-    # Legacy root sketch
     add_custom_target(legacy
         COMMAND ${ARDUINO_CLI} compile
                 --fqbn arduino:avr:nano:cpu=atmega328
                 --warnings all
                 --build-path "${CMAKE_BINARY_DIR}/legacy"
-                "${CMAKE_SOURCE_DIR}/MoistureController.ino"
+                "${CMAKE_SOURCE_DIR}"
         COMMENT "Compiling legacy root sketch with arduino-cli"
         VERBATIM
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
 
-    # New Ultra target (recommended)
     add_custom_target(ultra
         COMMAND ${ARDUINO_CLI} compile
                 --fqbn arduino:avr:nano:cpu=atmega328
                 --warnings all
                 --build-path "${CMAKE_BINARY_DIR}/ultra"
-                "${CMAKE_SOURCE_DIR}/firmware/avr-ultra/avr-ultra.ino"
-        COMMENT "Compiling firmware/avr-ultra/ (Ultra low-power target)"
+                "${CMAKE_SOURCE_DIR}/firmware/avr-ultra"
+        COMMENT "Compiling firmware/avr-ultra (Ultra low-power target)"
         VERBATIM
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
 
-    add_custom_target(build-all DEPENDS ultra legacy)
-
-    # Default target builds everything (both legacy and ultra)
-    add_custom_target(default ALL DEPENDS build-all)
-
-    message(STATUS "Using arduino-cli build mode (recommended)")
-    message(STATUS "Default target is 'build-all' (builds both 'ultra' and 'legacy').")
-    return()
-endif()
-
-# -------------------------------------------------------------------
-# Native avr-gcc build (for CI / advanced use)
-# -------------------------------------------------------------------
-if(USE_NATIVE_AVR)
-
-    if(NOT CMAKE_TOOLCHAIN_FILE)
-        message(FATAL_ERROR
-            "Native AVR build requires -DCMAKE_TOOLCHAIN_FILE=cmake/avr-toolchain.cmake "
-            "(or your own avr-gcc toolchain file).")
+    add_custom_target(build-all ALL DEPENDS ultra)
+    if(TARGET host_tests)
+        add_dependencies(build-all host_tests)
     endif()
 
-    # Legacy root sketch (converted)
-    arduino_ino_to_cpp("${CMAKE_SOURCE_DIR}/MoistureController.ino" LEGACY_CPP)
-    add_executable(legacy "${LEGACY_CPP}")
-    set_target_properties(legacy PROPERTIES
-        OUTPUT_NAME "MoistureController-legacy"
-        SUFFIX ".elf")
-
-    # Ultra target (converted)
-    arduino_ino_to_cpp("${CMAKE_SOURCE_DIR}/firmware/avr-ultra/avr-ultra.ino" ULTRA_CPP)
-    add_executable(ultra
-        "${ULTRA_CPP}"
-        "${CMAKE_SOURCE_DIR}/firmware/avr-ultra/Config.h"
-        "${CMAKE_SOURCE_DIR}/firmware/avr-ultra/Types.h"
-        "${CMAKE_SOURCE_DIR}/firmware/avr-ultra/Power.h"
-    )
-    set_target_properties(ultra PROPERTIES
-        OUTPUT_NAME "MoistureController-ultra"
-        SUFFIX ".elf")
-
-    # Generate .hex files (very useful)
-    add_custom_command(TARGET ultra POST_BUILD
-        COMMAND ${CMAKE_OBJCOPY} -O ihex -R .eeprom
-                "$<TARGET_FILE:ultra>" "$<TARGET_FILE_DIR:ultra>/$<TARGET_NAME:ultra>.hex"
-        COMMENT "Generating ultra.hex")
-
-    add_custom_command(TARGET legacy POST_BUILD
-        COMMAND ${CMAKE_OBJCOPY} -O ihex -R .eeprom
-                "$<TARGET_FILE:legacy>" "$<TARGET_FILE_DIR:legacy>/$<TARGET_NAME:legacy>.hex"
-        COMMENT "Generating legacy.hex")
-
-    # Build both targets by default
-    add_custom_target(build-all ALL DEPENDS ultra legacy)
-    add_custom_target(default ALL DEPENDS build-all)
-
-    message(STATUS "Using native avr-gcc build mode")
-    message(STATUS "Default target is 'build-all' (builds both 'ultra' and 'legacy').")
-    return()
+    message(STATUS "Using arduino-cli build mode")
+    message(STATUS "Default target builds 'ultra' (+ host_tests when not cross-compiling)")
 endif()
 
-# -------------------------------------------------------------------
-# Default / helpful error message
-# -------------------------------------------------------------------
-message(FATAL_ERROR
-"MoistureController CMake configuration requires one of:
+if(USE_NATIVE_AVR)
+    if(NOT CMAKE_TOOLCHAIN_FILE)
+        message(FATAL_ERROR
+            "Native AVR build requires -DCMAKE_TOOLCHAIN_FILE=cmake/avr-toolchain.cmake")
+    endif()
 
-  -DUSE_ARDUINO_CLI=ON     (recommended - uses arduino-cli)
-  -DUSE_NATIVE_AVR=ON      (requires -DCMAKE_TOOLCHAIN_FILE=...)
+    add_executable(ultra_logic_smoke cmake/native_smoke.cpp)
+    target_include_directories(ultra_logic_smoke PRIVATE
+        "${CMAKE_SOURCE_DIR}/firmware/avr-ultra")
+    set_target_properties(ultra_logic_smoke PROPERTIES
+        OUTPUT_NAME "MoistureController-ultra-logic"
+        SUFFIX ".elf")
 
-Default target is 'build-all' (builds both the modern 'ultra' and the legacy sketch).
+    add_custom_command(TARGET ultra_logic_smoke POST_BUILD
+        COMMAND ${CMAKE_OBJCOPY} -O ihex -R .eeprom
+                "$<TARGET_FILE:ultra_logic_smoke>"
+                "$<TARGET_FILE_DIR:ultra_logic_smoke>/$<TARGET_NAME:ultra_logic_smoke>.hex"
+        COMMENT "Generating ultra-logic hex")
 
-Example:
-  cmake -B build -DUSE_ARDUINO_CLI=ON ..
-  cmake --build build                 # builds everything (default)
-  cmake --build build --target ultra
-  cmake --build build --target legacy
+    message(STATUS "Using native avr-gcc (Logic smoke test)")
+    message(STATUS "Firmware sketches: use arduino-cli / `make ultra`")
+endif()
+
+if(NOT USE_ARDUINO_CLI AND NOT USE_NATIVE_AVR)
+    message(FATAL_ERROR
+"Enable one of:
+  -DUSE_ARDUINO_CLI=ON     (recommended; compiles sketches)
+  -DUSE_NATIVE_AVR=ON      (requires -DCMAKE_TOOLCHAIN_FILE=cmake/avr-toolchain.cmake)
+
+Or just run:  make ultra && make test
 ")
+endif()

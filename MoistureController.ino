@@ -31,8 +31,8 @@
 volatile bool wakeUp = false;
 volatile int wdtCount = 0;
 const int HYSTERESIS = 10;  // ~1% offset for anti-chatter
-const int WATER_DURATION = 10000;  // 10 seconds
-const int MAX_WAIT_TIME = 60000;   // Safety timeout for hysteresis wait (60s)
+const unsigned long WATER_DURATION = 10000UL;  // 10 seconds
+const unsigned long MAX_WAIT_TIME = 60000UL;   // Safety timeout for hysteresis wait (60s)
 const long TARGET_SLEEP_MS = 300000;  // 5 min target, approximated with 8s WDT ticks
 
 void setup() {

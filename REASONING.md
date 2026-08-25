@@ -1,9 +1,9 @@
 # MoistureController — Design Reasoning and Trade-offs
 
 **Project**: MoistureController — Production-grade, ultra-low-power, single-zone garden irrigation controller  
-**Version of this document**: 1.0 (Initial)  
-**Last major update**: 2025 (Phase 0)  
-**Status**: Living document. This file is the single source of truth for *why* every decision was made.  
+**Version of this document**: 1.1 (Milestone 1 firmware)  
+**Last major update**: 2026-08  
+**Status**: Living document. This file is the single source of truth for *why* every decision was made. Firmware in `firmware/avr-ultra/` implements Layers 0–6 as of Milestone 1.  
 **Rule**: Any change to firmware, hardware, or documentation that affects power, safety, or architecture **must** update this file and add a code comment of the form `// REASONING.md §X.Y`.
 
 ---
@@ -105,7 +105,7 @@ These three constraints take precedence over convenience, cost, or "simplicity f
 - BOD disabled (fuses + `sleep_bod_disable()` called immediately before `sleep_cpu()`).
 - WDT completely disabled during sleep (only used for short watchdog reset if needed).
 - `PRR = 0xFF` (all peripherals powered down).
-- All GPIO: outputs driving low (or inputs with pull-ups disabled) + `DIDR0 = 0xFF`.
+- All GPIO: outputs driving low (or inputs with pull-ups disabled) + `DIDR0 = 0x3F` (ADC0..ADC5 only; ATmega328P has no DIDR0 bits 6–7). Do **not** drive SDA/SCL or the VBAT divider pin as outputs — that fights the pull-ups / divider and wastes tens to hundreds of µA.
 - AREF pin has only a small capacitor to GND (no direct connection to VCC).
 
 **Expected MCU sleep current**: 0.1–0.5 µA typical on genuine silicon at 3.3 V, room temperature.
@@ -376,4 +376,17 @@ All numbers and claims in this document must be traceable to these or direct mea
 
 ---
 
-**End of REASONING.md v1.0**
+---
+
+## Appendix B — Firmware milestone status
+
+| Milestone | What it proves | Status |
+|-----------|----------------|--------|
+| 0 | Layer 0 pin-safe + lowest-leakage `PWR_DOWN` recipe | superseded |
+| **1** | Real Layer 0 **close pulse**, DS3231 alarm wake, power-gated sensing, EEPROM+CRC, 6-layer cycle | **current** (`firmware/avr-ultra/`) |
+| 2 | Guided calibration UI, measured sleep-current log, KiCad PCB | planned |
+| 3 | ESP32-C3 “Smart” port with the same safety logic | planned |
+
+Milestone 0 only drove both H-bridge inputs LOW. That de-energizes a coil but **does not close a bistable valve**. Milestone 1 sends a polarity-correct close pulse on every reset before any other work (REASONING.md §5 Layer 0 / F3).
+
+**End of REASONING.md v1.1**

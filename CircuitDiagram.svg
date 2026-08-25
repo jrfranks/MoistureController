@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900">
+  <rect width="1400" height="900" fill="#f7f4ec"/>
+  <rect x="24" y="24" width="1352" height="852" fill="none" stroke="#1c2a38" stroke-width="2"/>
+  <text x="48" y="64" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#1c2a38">MoistureController Ultra — Hardware Wiring</text>
+  <text x="48" y="90" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="14" fill="#3b4a58">ATmega328P @ 3.3 V  ·  latching valve  ·  DS3231 VBAT alarm  ·  power-gated sensor  ·  fail-closed</text>
+  <line x1="48" y1="104" x2="1352" y2="104" stroke="#1c2a38" stroke-width="1"/>
+
+  <!-- Power -->
+  <rect x="48" y="128" width="220" height="120" rx="6" fill="#fff" stroke="#1c2a38" stroke-width="2"/>
+  <text x="158" y="156" text-anchor="middle" font-family="DejaVu Sans" font-size="15" font-weight="700" fill="#1c2a38">LiFePO4 3.2 V</text>
+  <text x="158" y="178" text-anchor="middle" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">or 3.3 V logic rail</text>
+  <text x="158" y="200" text-anchor="middle" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">+ solar charger (opt.)</text>
+  <text x="158" y="228" text-anchor="middle" font-family="DejaVu Sans" font-size="12" fill="#1c2a38">VCC ── GND</text>
+
+  <!-- MCU -->
+  <rect x="340" y="128" width="420" height="430" rx="6" fill="#fff" stroke="#1c2a38" stroke-width="2"/>
+  <text x="550" y="156" text-anchor="middle" font-family="DejaVu Sans" font-size="16" font-weight="700" fill="#1c2a38">ATmega328P (genuine)</text>
+  <text x="550" y="178" text-anchor="middle" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">3.3 V  ·  PWR_DOWN  ·  BOD off  ·  WDT off</text>
+  <text x="360" y="214" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#1c2a38">D2  INT0   RTC INT/SQW (INPUT_PULLUP)</text>
+  <text x="360" y="236" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#1c2a38">D3  INT1   user button (INPUT_PULLUP)</text>
+  <text x="360" y="258" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#1c2a38">D7  OUT    valve P-MOS gate (HIGH=off)</text>
+  <text x="360" y="280" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#1c2a38">D8  OUT    sensor P-MOS gate (HIGH=off)</text>
+  <text x="360" y="302" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#1c2a38">D9  OUT    DRV8833 AIN1</text>
+  <text x="360" y="324" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#1c2a38">D10 OUT    DRV8833 AIN2</text>
+  <text x="360" y="346" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#1c2a38">A0  ADC    moisture analog</text>
+  <text x="360" y="368" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#1c2a38">A2  ADC    Vbat divider</text>
+  <text x="360" y="390" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#1c2a38">A4  SDA    I2C</text>
+  <text x="360" y="412" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#1c2a38">A5  SCL    I2C</text>
+  <text x="360" y="448" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Unused GPIO: OUTPUT LOW. Never drive A2/A4/A5.</text>
+  <text x="360" y="470" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Strip regulator, USB-serial, and power LED for µA sleep.</text>
+  <text x="360" y="492" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">AREF: capacitor to GND only — do not tie to VCC.</text>
+  <text x="360" y="530" font-family="DejaVu Sans" font-size="12" fill="#1c2a38">VCC 3.3 V     GND     AVCC=VCC</text>
+
+  <!-- RTC -->
+  <rect x="800" y="128" width="300" height="170" rx="6" fill="#fff" stroke="#1c2a38" stroke-width="2"/>
+  <text x="950" y="156" text-anchor="middle" font-family="DejaVu Sans" font-size="15" font-weight="700" fill="#1c2a38">DS3231 (VBAT mode)</text>
+  <text x="820" y="184" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#1c2a38">INT/SQW → D2</text>
+  <text x="820" y="206" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#1c2a38">SDA → A4    SCL → A5</text>
+  <text x="820" y="228" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">VBAT: coin cell or main pack</text>
+  <text x="820" y="248" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Remove module LED + charge circuit</text>
+  <text x="820" y="268" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">I2C pull-ups to 3.3 V logic rail</text>
+  <text x="820" y="288" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Alarm1 on INT, EN32kHz off</text>
+
+  <!-- Sensor rail -->
+  <rect x="800" y="318" width="300" height="160" rx="6" fill="#fff" stroke="#1c2a38" stroke-width="2"/>
+  <text x="950" y="346" text-anchor="middle" font-family="DejaVu Sans" font-size="15" font-weight="700" fill="#1c2a38">Sensor rail (P-MOS)</text>
+  <text x="820" y="374" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Gate D8  ·  active LOW  ·  source = VCC</text>
+  <text x="820" y="396" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Drain → capacitive probe VCC</text>
+  <text x="820" y="418" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Probe AO → A0    GND → GND</text>
+  <text x="820" y="440" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Optional STEMMA VIN on same rail</text>
+  <text x="820" y="462" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">STEMMA SDA/SCL on A4/A5 (addr 0x36)</text>
+
+  <!-- Valve rail -->
+  <rect x="800" y="498" width="300" height="200" rx="6" fill="#fff" stroke="#1c2a38" stroke-width="2"/>
+  <text x="950" y="526" text-anchor="middle" font-family="DejaVu Sans" font-size="15" font-weight="700" fill="#1c2a38">Valve rail (P-MOS + H-bridge)</text>
+  <text x="820" y="554" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Gate D7  ·  active LOW  ·  source = VCC</text>
+  <text x="820" y="576" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Drain → DRV8833 VM  (+ 1000 µF bulk)</text>
+  <text x="820" y="598" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">AIN1 ← D9     AIN2 ← D10</text>
+  <text x="820" y="620" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">OUT1/OUT2 → latching solenoid</text>
+  <text x="820" y="642" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Close: IN1=L IN2=H   Open: opposite</text>
+  <text x="820" y="664" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">nSLEEP tied to gated VM (or logic VCC)</text>
+  <text x="820" y="686" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Layer 0: close pulse on every reset</text>
+
+  <!-- Vbat divider -->
+  <rect x="48" y="270" width="220" height="130" rx="6" fill="#fff" stroke="#1c2a38" stroke-width="2"/>
+  <text x="158" y="298" text-anchor="middle" font-family="DejaVu Sans" font-size="15" font-weight="700" fill="#1c2a38">Vbat divider</text>
+  <text x="158" y="324" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#1c2a38">VCC — 100k — A2 — 100k — GND</text>
+  <text x="158" y="348" text-anchor="middle" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Leave A2 as INPUT (never OUTPUT)</text>
+  <text x="158" y="372" text-anchor="middle" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Low-batt threshold 3000 mV</text>
+
+  <!-- Button -->
+  <rect x="48" y="420" width="220" height="100" rx="6" fill="#fff" stroke="#1c2a38" stroke-width="2"/>
+  <text x="158" y="448" text-anchor="middle" font-family="DejaVu Sans" font-size="15" font-weight="700" fill="#1c2a38">FAULT-clear button</text>
+  <text x="158" y="474" text-anchor="middle" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">D3 to GND, internal pull-up</text>
+  <text x="158" y="496" text-anchor="middle" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">Hold 2 s at boot / wake to clear</text>
+
+  <!-- Notes -->
+  <rect x="48" y="720" width="1304" height="136" rx="6" fill="#fff" stroke="#1c2a38" stroke-width="2"/>
+  <text x="64" y="748" font-family="DejaVu Sans" font-size="14" font-weight="700" fill="#1c2a38">Bring-up notes</text>
+  <text x="64" y="772" font-family="DejaVu Sans" font-size="13" fill="#3b4a58">1. An unmodified Nano/Pro Mini will not meet the 5–10 µA sleep target (regulator, USB-UART, power LED). Use a bare or stripped 328P.</text>
+  <text x="64" y="794" font-family="DejaVu Sans" font-size="13" fill="#3b4a58">2. If the valve opens when it should close, swap VALVE_CLOSE_IN1/IN2 in Config.h. Pulse length default 50 ms, hard cap 150 ms.</text>
+  <text x="64" y="816" font-family="DejaVu Sans" font-size="13" fill="#3b4a58">3. DS3231 is required for scheduled wakes. Without a valid clock the firmware enters FAULT and stays closed (button can still wake).</text>
+  <text x="64" y="838" font-family="DejaVu Sans" font-size="13" fill="#3b4a58">4. Pin map is firmware/avr-ultra/Config.h. Theory and FMEA: REASONING.md. This drawing supersedes the 2023 MOSFET/D0 breadboard diagram.</text>
+
+  <!-- title block -->
+  <text x="1352" y="90" text-anchor="end" font-family="DejaVu Sans" font-size="12" fill="#3b4a58">docs rev M1  ·  MIT  ·  github.com/jrfranks/MoistureController</text>
+</svg>
